@@ -785,7 +785,7 @@ class PersistentLabelledImage (AbsractLabelledImage):
 
     @staticmethod
     def __compute_labels_path(path, labels_dir=None):
-        p = os.path.splitext(path)[0] + '__labels.json'
+        p = os.path.splitext(path)[0] + '.json'
         if labels_dir is not None:
             p = os.path.join(labels_dir, os.path.split(p)[1])
         return p

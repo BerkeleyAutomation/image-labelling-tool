@@ -126,6 +126,7 @@ var labelling_tool;
             for (var i = 0; i < label_classes.length; i++) {
                 this.label_classes.push(new labelling_tool.LabelClass(label_classes[i]));
             }
+            this.label_classes.sort((a, b) => a.name.localeCompare(b.name))
             // Hide labels
             this.label_visibility = labelling_tool.LabelVisibility.FULL;
             // Button state
@@ -161,17 +162,12 @@ var labelling_tool;
             this._pushDataTimeout = null;
             // Frozen flag; while frozen, data will not be sent to backend
             this.frozen = false;
-            var toolbar_width = 220;
-            this._labelling_area_width = this._tool_width - toolbar_width;
-            var labelling_area_x_pos = toolbar_width + 10;
             this._lockableControls = $();
             // A <div> element that surrounds the labelling tool
-            var overall_border = $('<div style="border: 1px solid gray; width: ' + this._tool_width + 'px;"/>')
-                .appendTo(element);
-            var toolbar_container = $('<div style="position: relative;">').appendTo(overall_border);
-            var toolbar = $('<div style="position: absolute; width: ' + toolbar_width +
-                'px; padding: 4px; display: inline-block; background: #d0d0d0; border: 1px solid #a0a0a0; font-family: sans-serif;"/>').appendTo(toolbar_container);
-            var labelling_area = $('<div style="width:' + this._labelling_area_width + 'px; margin-left: ' + labelling_area_x_pos + 'px"/>').appendTo(overall_border);
+            var overall_border = $('<div style="display: flex; align-content: center; border: 1px solid gray; width: 95%; margin: auto; padding: 1px"/>').appendTo(element);
+            var toolbar = $('<div style="flex-basis: 15%; background: #d0d0d0; border: 1px solid #a0a0a0; font-family: sans-serif;"/>').appendTo(overall_border);
+            var labelling_area = $('<div style="flex-basis: 65%"/>').appendTo(overall_border);
+            var toolbar2 = $('<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; flex-basis: 25%; background: #d0d0d0; border: 1px solid #a0a0a0; font-family: sans-serif;"/>').appendTo(overall_border);
             /*
              *
              *
@@ -253,9 +249,21 @@ var labelling_tool;
             $('<p style="background: #b0b0b0;">Labels</p>').appendTo(toolbar);
             if (config.tools.labelClassSelector) {
                 this._label_class_selector_menu = $('<select name="label_class_selector"/>').appendTo(toolbar);
+                var label_class_buttons = [];
                 for (var i = 0; i < this.label_classes.length; i++) {
                     var cls = this.label_classes[i];
                     $('<option value="' + cls.name + '">' + cls.human_name + '</option>').appendTo(this._label_class_selector_menu);
+                    label_class_buttons.push($('<br/><button>' + cls.human_name + '</button><br/>').appendTo(toolbar2));
+                    function cbClosure(cls_name) {
+                        return function(event) {
+                            var selection = self.root_view.get_selection();
+                            for (var i = 0; i < selection.length; i++) {
+                                selection[i].set_label_class(cls_name);
+                            }                
+                        }
+                    }
+                    label_class_buttons[i].button().click(cbClosure(cls.name));
+                    this._lockableControls = this._lockableControls.add(label_class_buttons[i]);
                 }
                 $('<option value="__unclassified" selected="false">UNCLASSIFIED</option>').appendTo(this._label_class_selector_menu);
                 this._label_class_selector_menu.change(function (event, ui) {
@@ -423,18 +431,18 @@ var labelling_tool;
             // Create SVG element of the appropriate dimensions
             this._svg = d3.select(labelling_area[0])
                 .append("svg:svg")
-                .attr("width", this._labelling_area_width)
+                .attr("width", "100%")
                 .attr("height", this._tool_height)
                 .call(zoom_behaviour);
             this._loading_notification = d3.select(labelling_area[0])
                 .append("svg:svg")
-                .attr("width", this._labelling_area_width)
+                .attr("width", "100%")
                 .attr("height", this._tool_height)
                 .attr("style", "display: none");
             this._loading_notification.append("rect")
                 .attr("x", "0px")
                 .attr("y", "0px")
-                .attr("width", "" + this._labelling_area_width + "px")
+                .attr("width", "100%")
                 .attr("height", "" + this._tool_height + "px")
                 .attr("fill", "#404040");
             this._loading_notification_text = this._loading_notification.append("text")
@@ -445,7 +453,6 @@ var labelling_tool;
                 .attr("font-family", "serif")
                 .attr("font-size", "20px")
                 .text("Loading...");
-            var svg = this._svg;
             // Add the zoom transformation <g> element
             this._zoom_node = this._svg.append('svg:g').attr('transform', 'scale(1)');
             this._zoom_scale = 1.0;
